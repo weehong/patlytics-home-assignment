@@ -1,0 +1,38 @@
+services:
+  backend:
+    container_name: api
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    environment:
+      - PORT=${BACKEND_PORT:-8000}
+      - LLM_API_KEY=${LLM_API_KEY}
+      - FUZZY_MATCH_THRESHOLD=${FUZZY_MATCH_THRESHOLD:-80}
+      - CORS_ALLOWED_ORIGINS=http://localhost:5173,https://patlytics.thedecoder.net
+    env_file:
+      - .env
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    container_name: app
+    build:
+      context: ./frontend
+      args:
+        - NODE_ENV=${NODE_ENV:-development}
+    ports:
+      - "${FRONTEND_PORT:-5173}:5173"
+    environment:
+      - VITE_API_URL=${BACKEND_URL}
+      - REACT_APP_ENV=${NODE_ENV:-development}
+    env_file:
+      - .env
+    tty: true
+    stdin_open: true
+    depends_on:
+      - backend
